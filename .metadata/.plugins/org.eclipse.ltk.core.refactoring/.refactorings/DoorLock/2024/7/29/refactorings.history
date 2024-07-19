@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Rename resource &apos;DoorLock/Core/Src/buttonmatrix.c&apos; to &apos;button_control.c&apos;" description="Rename resource &apos;buttonmatrix.c&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="Core/Src/buttonmatrix.c" name="button_control.c" stamp="1721355917381" updateReferences="true"/>&#x0A;<refactoring comment="Rename resource &apos;DoorLock/Core/Inc/buttonmatrix.h&apos; to &apos;button_control.h&apos;" description="Rename resource &apos;buttonmatrix.h&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="Core/Inc/buttonmatrix.h" name="button_control.h" stamp="1721355947946" updateReferences="true"/>
+</session>

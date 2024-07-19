@@ -1,0 +1,25 @@
+#define NUM_ROWS 			4
+#define NUM_COLUMNS 		3
+
+#define PASSCODE_SIZE 		4
+
+#define RETURN_NONE			(~0U)
+#define RETURN_LOCK			(~0U >> 1)
+#define RETURN_SET			(~0U >> 2)
+
+typedef enum lockState
+{
+	PASSIVE,
+	LOCKING,
+	UNLOCKING,
+	SETTING_PASSCODE
+};
+
+//#define RETURN_LOCK
+//#define RETURN_EDIT_CODE
+
+char passcode[PASSCODE_SIZE];
+
+int scanButton();
+bool actionSetPasscode();
+bool actionEnterPasscode();
