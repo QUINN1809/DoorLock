@@ -61,37 +61,29 @@ uint16_t scanButton(void)
 
 bool actionSetPasscode(void)
 {
-	static uint16_t index = 0;
-	static char passcodeBuffer[PASSCODE_SIZE];
-
-	uint16_t num = scanButton();
-	if(num != RETURN_NONE && num != RETURN_LOCK && num != RETURN_EDIT_CODE)
+	bool rtv = true;
+	uint16_t num = 0;
+	uint16_t index = 0;
+	char passcodeTemp[PASSCODE_SIZE];
+	while(1)
 	{
-		passcode[index] = num;
-		index++;
-
-		if(index == PASSCODE_SIZE)
+		num = scanButton();
+		if(num != RETURN_NONE && num != RETURN_LOCK && num != RETURN_EDIT_CODE)
 		{
-			// End timer
-			return true;
+			passcode[index] = num;
+			index++;
+			if(index == PASSCODE_SIZE)
+			{
+				break;
+			}
 		}
 
-		if(index == 1)
+		if(/*Timeout*/)
 		{
-			// Start timer
+			rtv = false;
+			break;
 		}
 	}
-
-	if(/*Timeout*/)
-	{
-		rtv = false;
-		break;
-	}
-
-
-	// Write Passcode to EEPROM
-	passcode = passcodeBuffer;
-	return true;
 
 	//Write Passcode to EEPROM
 	passcode = passcodeTemp;
@@ -118,13 +110,17 @@ bool actionEnterPasscode(void)
 				{
 					memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
 					index = 0;
-					// End timer
+					// Reset timer
 					return false;
 				}
 			}
 
 			// Passcode matches
 			// Unlock The Doorlock
+
+			// Write Passcode to EEPROM
+			passcode = passcodeBuffer;
+			return true;
 		}
 		else if(index == 1)
 		{

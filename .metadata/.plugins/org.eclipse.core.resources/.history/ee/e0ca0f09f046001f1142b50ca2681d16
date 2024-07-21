@@ -142,16 +142,7 @@ int main(void)
 	    break;
 
 	  case SETTING_PASSCODE:
-		bool rtv = actionSetPasscode();
-
-		if(rtv)
-		{
-
-		}
-		else
-		{
-
-		}
+		actionSetPasscode();
 	    break;
 	}
     /* USER CODE BEGIN 3 */

@@ -1,8 +1,6 @@
 /*
  * motor_control.h
- *
- *  Created on: Jul 18, 2024
- *      Author: Quinn
+ * Author: Quinn Ivison
  */
 
 int actionLock();

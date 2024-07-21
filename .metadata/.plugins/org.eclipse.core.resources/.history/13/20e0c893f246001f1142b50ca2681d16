@@ -1,6 +1,8 @@
 /*
  * led_control.c
- * Author: Quinn Ivison
+ *
+ *  Created on: Jul 18, 2024
+ *      Author: Quinn
  */
 
 #include <stdio.h>
