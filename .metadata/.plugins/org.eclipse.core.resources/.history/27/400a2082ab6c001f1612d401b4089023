@@ -1,0 +1,54 @@
+/*
+ * button_control.h
+ * Author: Quinn Ivison
+ */
+
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+
+#define NUM_ROWS 			4
+#define NUM_COLUMNS 		3
+
+#define RETURN_NONE			(~0)
+#define RETURN_SUCCESS		(~0 >> 1)
+#define RETURN_FAILURE		(~0 >> 2)
+
+#define RETURN_LOCK			(~0 >> 3)
+#define RETURN_EDIT			(~0 >> 4)
+
+#define PASSCODE_SIZE 		4
+
+#define TIMEOUT				10000
+
+TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim3;
+
+void setTimer(uint8_t timerNum, TIM_HandleTypeDef timer)
+{
+	if(timerNum == 1)
+	{
+		htim1 = timer;
+	}
+	else if(timerNum == 3)
+	{
+		htim3 = timer;
+	}
+}
+
+typedef enum
+{
+	ePASSIVE,
+	eLOCKING,
+	eUNLOCKING,
+	eSETTING_PASSCODE
+} lockState;
+
+GPIO_TypeDef GPIO_PORT[NUM_COLUMNS] = {GPIOA, GPIOA, GPIOA};
+uint16_t GPIO_PIN[NUM_COLUMNS] = {GPIO_PIN_6, GPIO_PIN_6, GPIO_PIN_6};
+
+char passcode[PASSCODE_SIZE];
+
+uint16_t scanButton(void);
+uint16_t actionSetPasscode(void);
+uint16_t actionEnterPasscode(void);

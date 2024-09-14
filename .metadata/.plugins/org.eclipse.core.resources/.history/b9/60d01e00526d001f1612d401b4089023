@@ -1,0 +1,39 @@
+/*
+ * led_control.h
+ * Author: Quinn Ivison
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#define BLINK_INTERVAL	500 // 500 ms
+#define NUM_LEDS		3
+
+typedef enum
+{
+	eNONE,
+	eERROR,
+	ePENDING,
+	eSUCCESS
+} ledType;
+
+TIM_HandleTypeDef htim3;
+
+uint16_t activeLED;
+bool activeLEDState;
+
+GPIO_TypeDef *LED_PORTS[NUM_LEDS] = {GPIOA, GPIOA, GPIOA};
+uint16_t LED_PINS[NUM_LEDS] = {GPIO_PIN_1, GPIO_PIN_1, GPIO_PIN_1};
+
+void setLEDTimer(TIM_HandleTypeDef timer);
+
+void errorLED(void);
+void successLED(void);
+void pendingLED(void);
+
+void activateLED(uint16_t ledType);
+void disableLEDs(void);
+void blinkLED(void);
+

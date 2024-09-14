@@ -1,0 +1,29 @@
+/*
+ * motor_control.c
+ * Author: Quinn Ivison
+ */
+
+#include "motor_control.h"
+
+void actionLock(void)
+{
+	powerMotor(MOTOR_FORWARD, 100U);
+}
+
+void actionUnlock(void)
+{
+	powerMotor(MOTOR_REVERSE, 100U);
+}
+
+void powerMotor(uint16_t direction, uint16_t steps)
+{
+	HAL_GPIO_WritePin(GPIOX, GPIO_PIN_X, GPIO_PIN_RESET);
+
+	for (uint16_t i = 0; i < steps; i++)
+	{
+		HAL_GPIO_WritePin(GPIOX, GPIO_PIN_X, GPIO_PIN_SET);
+		HAL_Delay(STEP_DELAY);
+		HAL_GPIO_WritePin(GPIOX, GPIO_PIN_X, GPIO_PIN_RESET);
+		HAL_Delay(STEP_DELAY);
+	}
+}

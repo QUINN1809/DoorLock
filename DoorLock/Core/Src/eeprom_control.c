@@ -1,0 +1,27 @@
+/*
+ * eeprom_control.c
+ * Author: Quinn Ivison
+ */
+
+#include "stm32f3xx_hal.h"
+#include "eeprom_control.h"
+
+uint16_t readLockState(void)
+{
+	return 0;
+}
+
+uint16_t readPasscode(void)
+{
+	return 0;
+}
+
+void writeEEPROM(char * msg)
+{
+	//HAL_I2C_Mem_Write(hi2c1, , , , msg, sizeof(msg), EEPROM_TIMEOUT);
+}
+
+void readEEPROM(char * msg)
+{
+	//HAL_I2C_Mem_Read(hi2c1, , , , msg, sizeof(msg), EEPROM_TIMEOUT);
+}

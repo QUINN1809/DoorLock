@@ -3,30 +3,46 @@
  * Author: Quinn Ivison
  */
 
+#include <stdint.h>
+#include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define NUM_ROWS 			4
 #define NUM_COLUMNS 		3
 
+#define RETURN_NONE			(~0)
+#define RETURN_SUCCESS		(~0 >> 1)
+#define RETURN_FAILURE		(~0 >> 2)
+
+#define RETURN_LOCK			(~0 >> 3)
+#define RETURN_EDIT			(~0 >> 4)
+
 #define PASSCODE_SIZE 		4
 
-#define RETURN_NONE			(~0U)
-#define RETURN_LOCK			(~0U >> 1)
-#define RETURN_SET			(~0U >> 2)
+#define TIMEOUT				10000
 
-typedef enum lockState
+typedef enum
 {
-	PASSIVE,
-	LOCKING,
-	UNLOCKING,
-	SETTING_PASSCODE
-};
+	ePASSIVE,
+	eLOCKING,
+	eUNLOCKING,
+	eSETTING_PASSCODE
+} lockState;
 
-//#define RETURN_LOCK
-//#define RETURN_EDIT_CODE
+extern TIM_HandleTypeDef htim1;
 
-char passcode[PASSCODE_SIZE];
+extern GPIO_TypeDef *OUT_PORT[NUM_COLUMNS];
+extern uint16_t OUT_PIN[NUM_COLUMNS];
 
-int scanButton(void);
-bool actionSetPasscode(void);
-bool actionEnterPasscode(void);
+extern GPIO_TypeDef *IN_PORT[NUM_ROWS];
+extern uint16_t IN_PIN[NUM_ROWS];
+
+extern char passcode[PASSCODE_SIZE];
+
+void setButtonTimer(TIM_HandleTypeDef timer);
+
+uint16_t scanButton(void);
+uint16_t actionSetPasscode(void);
+uint16_t actionEnterPasscode(void);

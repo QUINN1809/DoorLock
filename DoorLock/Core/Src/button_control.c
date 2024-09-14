@@ -2,12 +2,25 @@
  * button_control.c
  * Author: Quinn Ivison
  */
+#include "stm32f3xx_hal.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
+#include "led_control.h"
+#include "eeprom_control.h"
+#include "motor_control.h"
 #include "button_control.h"
+
+GPIO_TypeDef *OUT_PORT[NUM_COLUMNS] = {GPIOB, GPIOA, GPIOB};
+uint16_t OUT_PIN[NUM_COLUMNS] = {GPIO_PIN_3, GPIO_PIN_11, GPIO_PIN_5};
+
+GPIO_TypeDef *IN_PORT[NUM_ROWS] = {GPIOF, GPIOF, GPIOB, GPIOA};
+uint16_t IN_PIN[NUM_ROWS] = {GPIO_PIN_1, GPIO_PIN_0, GPIO_PIN_0, GPIO_PIN_12};
+
+char passcode[PASSCODE_SIZE];
+
+void setButtonTimer(TIM_HandleTypeDef timer)
+{
+	htim1 = timer;
+}
 
 uint16_t scanButton(void)
 {
@@ -16,12 +29,23 @@ uint16_t scanButton(void)
 	for(uint8_t col = 0; col < NUM_COLUMNS; col++)
 	{
 		//Write columns high
+		HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_SET);
 
 		for(uint8_t row = 0; row < NUM_ROWS; row++)
 		{
-			if(/*Read row*/)
+			if(HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]) == true)
 			{
-				while(/*Read row*/);
+				HAL_TIM_Base_Start(&htim1);
+
+				while(1)
+				{
+					if (HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]) == true || __HAL_TIM_GET_COUNTER(&htim1) > TIMEOUT)
+					{
+						break;
+					}
+				}
+
+				HAL_TIM_Base_Stop(&htim1);
 
 				if(row < 3)
 				{
@@ -40,7 +64,7 @@ uint16_t scanButton(void)
 							break;
 
 						case 2:
-							button = RETURN_SET;
+							button = RETURN_EDIT;
 							break;
 
 						default:
@@ -48,65 +72,69 @@ uint16_t scanButton(void)
 					}
 				}
 
+				HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_RESET);
 				goto breakLoop;
 			}
 		}
+
+		HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_RESET);
 	}
 
 	breakLoop:
 
-	sleep(50);
+	HAL_Delay(50);
 	return button;
 }
 
-bool actionSetPasscode(void)
+uint16_t actionSetPasscode(void)
 {
+	uint16_t rtv = RETURN_NONE;
 	static uint16_t index = 0;
 	static char passcodeBuffer[PASSCODE_SIZE];
 
 	uint16_t num = scanButton();
-	if(num != RETURN_NONE && num != RETURN_LOCK && num != RETURN_EDIT_CODE)
+
+	if(__HAL_TIM_GET_COUNTER(&htim1) > TIMEOUT || num == RETURN_LOCK || num == RETURN_EDIT)
+	{
+		index = 0;
+		HAL_TIM_Base_Stop(&htim1);
+		memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
+		rtv = num;
+	}
+	else if(num != RETURN_NONE)
 	{
 		passcode[index] = num;
 		index++;
 
 		if(index == PASSCODE_SIZE)
 		{
-			// End timer
-			return true;
-		}
+			HAL_TIM_Base_Stop(&htim1);
+			writeEEPROM(passcode);
 
-		if(index == 1)
+			index = 0;
+			memcpy(passcode, passcodeBuffer, PASSCODE_SIZE);
+			memset(passcodeBuffer, 0, PASSCODE_SIZE);
+			rtv = RETURN_SUCCESS;
+		}
+		else if(index == 1)
 		{
-			// Start timer
+			HAL_TIM_Base_Start(&htim1);
 		}
 	}
-
-	if(/*Timeout*/)
-	{
-		rtv = false;
-		break;
-	}
-
-
-	// Write Passcode to EEPROM
-	passcode = passcodeBuffer;
-	return true;
-
-	//Write Passcode to EEPROM
-	passcode = passcodeTemp;
 
 	return rtv;
 }
 
-bool actionEnterPasscode(void)
+uint16_t actionEnterPasscode(void)
 {
+	uint16_t rtv = RETURN_NONE;
 	static uint16_t index = 0;
 	static char passcodeBuffer[PASSCODE_SIZE];
 
-	int num = scanButton();
-	if(num != RETURN_NONE && num != RETURN_LOCK && num != RETURN_EDIT_CODE)
+	uint16_t num = scanButton();
+	if(num != RETURN_NONE && num != RETURN_LOCK && num != RETURN_EDIT)
 	{
+		rtv = RETURN_SUCCESS;
 		passcodeBuffer[index] = num;
 		index++;
 
@@ -116,25 +144,42 @@ bool actionEnterPasscode(void)
 			{
 				if(passcode[i] != passcodeBuffer[i])
 				{
-					memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
-					index = 0;
-					// End timer
-					return false;
+					rtv = RETURN_FAILURE;
+
+					errorLED();
 				}
 			}
 
-			// Passcode matches
-			// Unlock The Doorlock
+			index = 0;
+			memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
+			HAL_TIM_Base_Stop(&htim1);
+
+			if(rtv == RETURN_SUCCESS)
+			{
+				actionLock();
+				successLED();
+			}
 		}
-		else if(index == 1)
+		else
 		{
-			// Start timer
+			if(index == 1)
+			{
+				HAL_TIM_Base_Start(&htim1);
+			}
+
+			pendingLED();
+			rtv = RETURN_NONE;
 		}
 	}
-	else if(/* Timer expired  || */ num == RETURN_LOCK)
+	else if(__HAL_TIM_GET_COUNTER(&htim1) > TIMEOUT || num == RETURN_LOCK)
 	{
-		// Reset timer
+		index = 0;
+		rtv = RETURN_FAILURE;
+
+		errorLED();
+		memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
+		HAL_TIM_Base_Stop(&htim1);
 	}
 
-	return false;
+	return rtv;
 }

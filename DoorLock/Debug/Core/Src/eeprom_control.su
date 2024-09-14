@@ -1,0 +1,4 @@
+../Core/Src/eeprom_control.c:9:10:readLockState	4	static
+../Core/Src/eeprom_control.c:14:10:readPasscode	4	static
+../Core/Src/eeprom_control.c:19:6:writeEEPROM	16	static
+../Core/Src/eeprom_control.c:24:6:readEEPROM	16	static

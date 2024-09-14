@@ -3,7 +3,37 @@
  * Author: Quinn Ivison
  */
 
-void error(void);
-void success(void);
-void pending(void);
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#define BLINK_INTERVAL	500 // 500 ms
+#define NUM_LEDS		4
+#define NUM_STATUS_LEDS 3
+typedef enum
+{
+	eNONE,
+	eERROR,
+	ePENDING,
+	eSUCCESS
+} ledType;
+
+extern TIM_HandleTypeDef htim3;
+
+extern uint16_t activeLED;
+extern bool activeLEDState;
+
+extern GPIO_TypeDef *LED_PORTS[NUM_LEDS];
+extern uint16_t LED_PINS[NUM_LEDS];
+
+void setLEDTimer(TIM_HandleTypeDef timer);
+
+void errorLED(void);
+void successLED(void);
+void pendingLED(void);
+
+void activateLED(uint16_t ledType);
+void disableLEDs(void);
+void blinkLED(void);
 

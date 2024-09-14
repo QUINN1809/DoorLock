@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete resource &apos;DoorLock/Core/Src/eeprom_control&apos;" deleteContents="false" description="Delete resource &apos;DoorLock/Core/Src/eeprom_control&apos;" element1="/DoorLock/Core/Src/eeprom_control" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1722904604922"/>
+</session>

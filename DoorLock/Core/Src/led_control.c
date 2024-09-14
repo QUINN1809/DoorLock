@@ -3,23 +3,75 @@
  * Author: Quinn Ivison
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
+#include "stm32f3xx_hal.h"
 #include "led_control.h"
 
-void error(void)
+uint16_t activeLED = eNONE;
+bool activeLEDState = false;
+
+GPIO_TypeDef *LED_PORTS[NUM_LEDS] = {GPIOA, GPIOA, GPIOA, GPIOA};
+uint16_t LED_PINS[NUM_LEDS] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_3, GPIO_PIN_4};
+
+void setLEDTimer(TIM_HandleTypeDef timer)
 {
-	// Light LED high
+	htim3 = timer;
 }
 
-void pending(void)
+void errorLED(void)
 {
-	// Light LED high
+	activateLED(eERROR);
 }
 
-void success(void)
+void pendingLED(void)
 {
-	// Light LED high
+	activateLED(ePENDING);
+}
+
+void successLED(void)
+{
+	activateLED(eSUCCESS);
+}
+
+void activateLED(uint16_t ledType)
+{
+	if(activeLED == ledType)
+	{
+		return;
+	}
+
+	disableLEDs();
+	__HAL_TIM_SET_COUNTER(&htim3, 0);
+
+	activeLEDState = false;
+	activeLED = ledType;
+}
+
+void disableLEDs(void)
+{
+	for(int led = 0; led < NUM_STATUS_LEDS; led++)
+	{
+		HAL_GPIO_WritePin(LED_PORTS[led], LED_PINS[led], GPIO_PIN_RESET);
+	}
+
+	activeLEDState = false;
+	activeLED = eNONE;
+}
+
+void blinkLED(void)
+{
+	if(activeLED == eNONE)
+	{
+		return;
+	}
+
+	if(((__HAL_TIM_GET_COUNTER(&htim3) % BLINK_INTERVAL) < (BLINK_INTERVAL / 2)) && !activeLEDState)
+	{
+		HAL_GPIO_WritePin(LED_PORTS[activeLED - 1], LED_PINS[activeLED - 1], GPIO_PIN_SET);
+		activeLEDState = true;
+	}
+	else if(((__HAL_TIM_GET_COUNTER(&htim3) % BLINK_INTERVAL) >= (BLINK_INTERVAL / 2)) && activeLEDState)
+	{
+		HAL_GPIO_WritePin(LED_PORTS[activeLED - 1], LED_PINS[activeLED - 1], GPIO_PIN_RESET);
+		activeLEDState = true;
+	}
 }
