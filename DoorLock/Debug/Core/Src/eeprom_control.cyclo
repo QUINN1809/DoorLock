@@ -1,4 +1,0 @@
-../Core/Src/eeprom_control.c:9:10:readLockState	1
-../Core/Src/eeprom_control.c:14:10:readPasscode	1
-../Core/Src/eeprom_control.c:19:6:writeEEPROM	1
-../Core/Src/eeprom_control.c:24:6:readEEPROM	1

@@ -12,14 +12,19 @@
 GPIO_TypeDef *OUT_PORT[NUM_COLUMNS] = {GPIOB, GPIOA, GPIOB};
 uint16_t OUT_PIN[NUM_COLUMNS] = {GPIO_PIN_3, GPIO_PIN_11, GPIO_PIN_5};
 
-GPIO_TypeDef *IN_PORT[NUM_ROWS] = {GPIOF, GPIOF, GPIOB, GPIOA};
-uint16_t IN_PIN[NUM_ROWS] = {GPIO_PIN_1, GPIO_PIN_0, GPIO_PIN_0, GPIO_PIN_12};
+GPIO_TypeDef *IN_PORT[NUM_ROWS] = {GPIOF, GPIOB, GPIOB, GPIOA};
+uint16_t IN_PIN[NUM_ROWS] = {GPIO_PIN_1, GPIO_PIN_1, GPIO_PIN_0, GPIO_PIN_12};
 
 char passcode[PASSCODE_SIZE];
 
 void setButtonTimer(TIM_HandleTypeDef timer)
 {
 	htim1 = timer;
+}
+
+void setUARTHandle(UART_HandleTypeDef uart)
+{
+	huart1 = uart;
 }
 
 uint16_t scanButton(void)
@@ -30,46 +35,31 @@ uint16_t scanButton(void)
 	{
 		//Write columns high
 		HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_SET);
+		HAL_Delay(5);
 
 		for(uint8_t row = 0; row < NUM_ROWS; row++)
 		{
 			if(HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]) == true)
 			{
 				HAL_TIM_Base_Start(&htim1);
-
+				__HAL_TIM_SET_COUNTER(&htim1, 0);
 				while(1)
 				{
-					if (HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]) == true || __HAL_TIM_GET_COUNTER(&htim1) > TIMEOUT)
+					if (HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]) == false || __HAL_TIM_GET_COUNTER(&htim1) > ACTION_TIMEOUT)
 					{
 						break;
 					}
 				}
-
 				HAL_TIM_Base_Stop(&htim1);
 
-				if(row < 3)
+				if(row <  NUM_ROWS - 1)
 				{
-					button = col * 3 + row + 1;
+					button = col * NUM_COLUMNS + row + 1;
 				}
-				else if(row == 4)
+				else if(row == NUM_ROWS - 1)
 				{
-					switch(col)
-					{
-						case 0:
-							button = RETURN_LOCK;
-							break;
-
-						case 1:
-							button = 0;
-							break;
-
-						case 2:
-							button = RETURN_EDIT;
-							break;
-
-						default:
-							break;
-					}
+					const uint16_t button_map[NUM_COLUMNS] = {RETURN_LOCK, 0, RETURN_EDIT};
+					button = button_map[col];
 				}
 
 				HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_RESET);
@@ -93,12 +83,13 @@ uint16_t actionSetPasscode(void)
 	static char passcodeBuffer[PASSCODE_SIZE];
 
 	uint16_t num = scanButton();
-
-	if(__HAL_TIM_GET_COUNTER(&htim1) > TIMEOUT || num == RETURN_LOCK || num == RETURN_EDIT)
+	if(__HAL_TIM_GET_COUNTER(&htim1) > ACTION_TIMEOUT || num == RETURN_LOCK || num == RETURN_EDIT)
 	{
 		index = 0;
 		HAL_TIM_Base_Stop(&htim1);
+		__HAL_TIM_SET_COUNTER(&htim1, 0);
 		memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
+
 		rtv = num;
 	}
 	else if(num != RETURN_NONE)
@@ -108,17 +99,23 @@ uint16_t actionSetPasscode(void)
 
 		if(index == PASSCODE_SIZE)
 		{
-			HAL_TIM_Base_Stop(&htim1);
+
 			writeEEPROM(passcode);
 
 			index = 0;
-			memcpy(passcode, passcodeBuffer, PASSCODE_SIZE);
-			memset(passcodeBuffer, 0, PASSCODE_SIZE);
+			HAL_TIM_Base_Stop(&htim1);
+			memcpy(passcode, passcodeBuffer, sizeof(char)*PASSCODE_SIZE);
+			memset(passcodeBuffer, 0, sizeof(char)*PASSCODE_SIZE);
 			rtv = RETURN_SUCCESS;
 		}
-		else if(index == 1)
+		else
 		{
-			HAL_TIM_Base_Start(&htim1);
+			if(index == 1)
+			{
+				HAL_TIM_Base_Start(&htim1);
+			}
+
+			__HAL_TIM_SET_COUNTER(&htim1, 0);
 		}
 	}
 
@@ -134,30 +131,28 @@ uint16_t actionEnterPasscode(void)
 	uint16_t num = scanButton();
 	if(num != RETURN_NONE && num != RETURN_LOCK && num != RETURN_EDIT)
 	{
-		rtv = RETURN_SUCCESS;
 		passcodeBuffer[index] = num;
 		index++;
 
 		if(index == PASSCODE_SIZE)
 		{
+			rtv = RETURN_SUCCESS;
 			for(uint8_t i = 0; i < PASSCODE_SIZE; i++)
 			{
-				if(passcode[i] != passcodeBuffer[i])
-				{
-					rtv = RETURN_FAILURE;
-
-					errorLED();
-				}
+				rtv &= passcode[i] == passcodeBuffer[i];
 			}
 
 			index = 0;
-			memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
 			HAL_TIM_Base_Stop(&htim1);
+			memset(passcodeBuffer, 0, sizeof(char)*PASSCODE_SIZE);
 
 			if(rtv == RETURN_SUCCESS)
 			{
-				actionLock();
 				successLED();
+			}
+			else
+			{
+				errorLED();
 			}
 		}
 		else
@@ -165,20 +160,21 @@ uint16_t actionEnterPasscode(void)
 			if(index == 1)
 			{
 				HAL_TIM_Base_Start(&htim1);
+				pendingLED();
 			}
 
-			pendingLED();
-			rtv = RETURN_NONE;
+			__HAL_TIM_SET_COUNTER(&htim1, 0);
 		}
 	}
-	else if(__HAL_TIM_GET_COUNTER(&htim1) > TIMEOUT || num == RETURN_LOCK)
+	else if(__HAL_TIM_GET_COUNTER(&htim1) > ACTION_TIMEOUT || num == RETURN_LOCK || num == RETURN_EDIT)
 	{
 		index = 0;
-		rtv = RETURN_FAILURE;
-
-		errorLED();
 		memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
 		HAL_TIM_Base_Stop(&htim1);
+
+		disableLED();
+		rtv = num;
+		__HAL_TIM_SET_COUNTER(&htim1, 0);
 	}
 
 	return rtv;

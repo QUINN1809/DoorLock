@@ -59,10 +59,36 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define MCO_Pin GPIO_PIN_0
 #define MCO_GPIO_Port GPIOF
+#define ROW_1_Pin GPIO_PIN_1
+#define ROW_1_GPIO_Port GPIOF
+#define LED_1_Pin GPIO_PIN_0
+#define LED_1_GPIO_Port GPIOA
+#define LED_2_Pin GPIO_PIN_1
+#define LED_2_GPIO_Port GPIOA
+#define LED_3_Pin GPIO_PIN_3
+#define LED_3_GPIO_Port GPIOA
+#define LED_4_Pin GPIO_PIN_4
+#define LED_4_GPIO_Port GPIOA
+#define DIR_Pin GPIO_PIN_5
+#define DIR_GPIO_Port GPIOA
+#define STEP_Pin GPIO_PIN_6
+#define STEP_GPIO_Port GPIOA
+#define ROW_3_Pin GPIO_PIN_0
+#define ROW_3_GPIO_Port GPIOB
+#define ROW_2_Pin GPIO_PIN_1
+#define ROW_2_GPIO_Port GPIOB
+#define COL_2_Pin GPIO_PIN_11
+#define COL_2_GPIO_Port GPIOA
+#define ROW_4_Pin GPIO_PIN_12
+#define ROW_4_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
+#define COL_1_Pin GPIO_PIN_3
+#define COL_1_GPIO_Port GPIOB
+#define COL_3_Pin GPIO_PIN_5
+#define COL_3_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

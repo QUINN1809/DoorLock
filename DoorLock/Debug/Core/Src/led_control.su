@@ -1,7 +1,0 @@
-../Core/Src/led_control.c:15:6:setLEDTimer	8	static
-../Core/Src/led_control.c:20:6:errorLED	8	static
-../Core/Src/led_control.c:25:6:pendingLED	8	static
-../Core/Src/led_control.c:30:6:successLED	8	static
-../Core/Src/led_control.c:35:6:activateLED	16	static
-../Core/Src/led_control.c:49:6:disableLEDs	16	static
-../Core/Src/led_control.c:60:6:blinkLED	8	static

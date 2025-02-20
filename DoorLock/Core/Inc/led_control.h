@@ -24,16 +24,18 @@ extern TIM_HandleTypeDef htim3;
 extern uint16_t activeLED;
 extern bool activeLEDState;
 
+extern uint16_t timeoutLED;
+
 extern GPIO_TypeDef *LED_PORTS[NUM_LEDS];
 extern uint16_t LED_PINS[NUM_LEDS];
 
-void setLEDTimer(TIM_HandleTypeDef timer);
+void initLEDTimer(TIM_HandleTypeDef timer);
 
 void errorLED(void);
 void successLED(void);
 void pendingLED(void);
 
-void activateLED(uint16_t ledType);
-void disableLEDs(void);
+void activateLED(uint16_t ledType, uint16_t timeout);
+void disableLED(void);
 void blinkLED(void);
 
