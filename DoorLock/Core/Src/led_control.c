@@ -6,37 +6,37 @@
 #include "stm32f3xx_hal.h"
 #include "led_control.h"
 
-uint16_t activeLED = eNONE;
-bool activeLEDState = false;
+extern TIM_HandleTypeDef htim3;
 
-uint16_t timeoutLED = 0;
+static uint16_t activeLED = eNONE;
+static bool activeLEDState = false;
 
-GPIO_TypeDef *LED_PORTS[NUM_LEDS] = {GPIOA, GPIOA, GPIOA, GPIOA};
-uint16_t LED_PINS[NUM_LEDS] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_3, GPIO_PIN_4};
+static uint16_t LED_TIMEOUTS[NUM_LEDS] = {MAX_TIMEOUT, ERROR_TIMEOUT, PENDING_TIMEOUT, SUCCESS_TIMEOUT};
+static GPIO_TypeDef *LED_PORTS[NUM_LEDS] = {GPIOA, GPIOA, GPIOA, GPIOA};
+static uint16_t LED_PINS[NUM_LEDS] = {GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_3, GPIO_PIN_4};
 
-void initLEDTimer(TIM_HandleTypeDef timer)
-{
-	htim3 = timer;
-}
+
 
 void errorLED(void)
 {
-	activateLED(eERROR, 5000);
+	activateLED(eERROR);
 }
+
 
 void pendingLED(void)
 {
-	activateLED(ePENDING, 0xffff);
+	activateLED(ePENDING);
 }
+
 
 void successLED(void)
 {
-	activateLED(eSUCCESS, 5000);
+	activateLED(eSUCCESS);
 }
 
-void activateLED(uint16_t ledType, uint16_t timeout)
+
+void activateLED(uint16_t ledType)
 {
-	timeoutLED = timeout;
 	uint32_t time = __HAL_TIM_GET_COUNTER(&htim3) % BLINK_INTERVAL;
 	__HAL_TIM_SET_COUNTER(&htim3, time);
 
@@ -46,19 +46,22 @@ void activateLED(uint16_t ledType, uint16_t timeout)
 	}
 
 	disableLED();
-	HAL_TIM_Base_Start(&htim3);
-	activeLEDState = false;
 	activeLED = ledType;
 }
 
+
 void disableLED(void)
 {
-	HAL_GPIO_WritePin(LED_PORTS[activeLED - 1], LED_PINS[activeLED - 1], GPIO_PIN_RESET);
-	HAL_TIM_Base_Stop(&htim3);
+	if(activeLED == eNONE)
+	{
+		return;
+	}
 
+	HAL_GPIO_WritePin(LED_PORTS[activeLED - 1], LED_PINS[activeLED - 1], GPIO_PIN_RESET);
 	activeLEDState = false;
 	activeLED = eNONE;
 }
+
 
 void blinkLED(void)
 {
@@ -67,15 +70,18 @@ void blinkLED(void)
 		return;
 	}
 
-	if(__HAL_TIM_GET_COUNTER(&htim3) > timeoutLED)
+	// Disable LED if timeout activates
+	if(__HAL_TIM_GET_COUNTER(&htim3) > LED_TIMEOUTS[activeLED])
 	{
 		disableLED();
 	}
+	// Activate LED
 	else if(((__HAL_TIM_GET_COUNTER(&htim3) % BLINK_INTERVAL) < (BLINK_INTERVAL / 2)) && !activeLEDState)
 	{
 		HAL_GPIO_WritePin(LED_PORTS[activeLED - 1], LED_PINS[activeLED - 1], GPIO_PIN_SET);
 		activeLEDState = true;
 	}
+	// Disable LED
 	else if(((__HAL_TIM_GET_COUNTER(&htim3) % BLINK_INTERVAL) >= (BLINK_INTERVAL / 2)) && activeLEDState)
 	{
 		HAL_GPIO_WritePin(LED_PORTS[activeLED - 1], LED_PINS[activeLED - 1], GPIO_PIN_RESET);

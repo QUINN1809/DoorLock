@@ -8,11 +8,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define STEP_DELAY		10
+#define STEP_DELAY		1	// 1 ms
 
-#define MOTOR_FORWARD	0
-#define MOTOR_REVERSE	1
-
-void actionLock(void);
-void actionUnlock(void);
-void powerMotor(uint16_t direction, uint16_t steps);
+void powerMotor(bool direction, uint16_t steps);

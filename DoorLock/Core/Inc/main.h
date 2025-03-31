@@ -31,7 +31,19 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+typedef enum
+{
+	ePASSIVE,
+	eLOCKING,
+	eUNLOCKING,
+	eSETTING_PASSCODE
+} actionState;
 
+typedef enum
+{
+	eLOCKED,
+	eUNLOCKED
+} lockStatus;
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include <stdio.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "button_control.h"
@@ -62,9 +62,9 @@ static void MX_USART1_UART_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
-int __io_putchar(int ch) {
-    HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-    return ch;
+void print(const char *str, uint16_t size)
+{
+	HAL_UART_Transmit(&huart1, (uint8_t *)str, size, HAL_MAX_DELAY);
 }
 /* USER CODE END PFP */
 
@@ -81,9 +81,9 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  uint16_t state = ePASSIVE;
-  bool locked = false;
-  uint16_t rtv;
+  uint8_t state = ePASSIVE;
+  bool lockStatus = eLOCKED;
+  uint8_t rtv;
 
   // Read EEPROM for lock state;
 
@@ -122,51 +122,94 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  switch(state)
-	  {
-	  case ePASSIVE:
+	switch(state)
+	{
+	case ePASSIVE:
 		rtv = actionEnterPasscode();
 
-		if(rtv == RETURN_LOCK || rtv == RETURN_SUCCESS)
-		{
-			state = eLOCKING;
+		if(rtv == RETURN_SUCCESS){
+			if(lockStatus == eLOCKED)
+			{
+				char msg[] = "\nCorrect Passcode Entered";
+				print(msg, sizeof(msg));
+				successLED();
+				state = eLOCKING;
+			}
+			else
+			{
+				char msg[] = "\nAlready Unlocked";
+				print(msg, sizeof(msg));
+				disableLED();
+			}
 		}
-		else if(rtv == RETURN_EDIT)
-		{
+		else if(rtv == RETURN_FAILURE){
+			char msg[] = "\nIncorrect Passcode Entered";
+			print(msg, sizeof(msg));
+			errorLED();
+		}
+		else if(rtv == BUTTON_LOCK){
+			if(lockStatus == eUNLOCKED)
+			{
+				char msg[] = "\nUnlocking/Locking Door";
+				print(msg, sizeof(msg));
+				successLED();
+				state = eLOCKING;
+			}
+			else
+			{
+				char msg[] = "\nAlready Locked";
+				print(msg, sizeof(msg));
+				disableLED();
+			}
+		}
+		else if(rtv == BUTTON_EDIT){
+			char msg[] = "\nEditing Passcode";
+			print(msg, sizeof(msg));
+			disableLED();
 			state = eSETTING_PASSCODE;
 		}
+		else if(rtv == RETURN_PENDING) 	{ pendingLED(); }
 
 		break;
 
-	  case eLOCKING:
-		if(locked)
-		{
-			actionUnlock();
-		}
-		else
-		{
-			actionLock();
-		}
-
-		locked = !locked;
+	case eLOCKING:
+		lockStatus = !lockStatus;
+		powerMotor(lockStatus, 1000U);
 		state = ePASSIVE;
+
 	    break;
 
-	  case eSETTING_PASSCODE:
-		 rtv = actionSetPasscode();
+	case eSETTING_PASSCODE:
+		rtv = actionSetPasscode();
 
-		if(rtv == RETURN_SUCCESS || rtv == RETURN_FAILURE)
-		{
+		if(rtv == RETURN_SUCCESS){
+			char msg[] = "\nPasscode Successfully Set";
+			print(msg, sizeof(msg));
+			successLED();
 			state = ePASSIVE;
 		}
+		else if(rtv == RETURN_FAILURE){
+			char msg[] = "\nPasscode Unsuccessfully Set";
+			print(msg, sizeof(msg));
+			errorLED();
+			state = ePASSIVE;
+		}
+		else if(rtv == BUTTON_LOCK){
+			char msg[] = "\nAborting Passcode Change";
+			print(msg, sizeof(msg));
+			disableLED();
+			state = ePASSIVE;
+		}
+		else if(rtv == RETURN_PENDING) 	{ pendingLED(); }
 
 		break;
 
-	  default:
+	default:
 		break;
 	}
 
 	blinkLED();
+	HAL_Delay(50);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -310,7 +353,6 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM1_Init 2 */
-  setButtonTimer(htim1);
   /* USER CODE END TIM1_Init 2 */
 
 }
@@ -355,7 +397,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-  initLEDTimer(htim3);
+  HAL_TIM_Base_Start(&htim3);
   /* USER CODE END TIM3_Init 2 */
 
 }
@@ -390,7 +432,6 @@ static void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
-  setUARTHandle(huart1);
   /* USER CODE END USART1_Init 2 */
 
 }

@@ -14,43 +14,23 @@
 
 #define PASSCODE_SIZE 		4
 
-#define ACTION_TIMEOUT		10000
+#define BLINK_INTERVAL		500 	// 500 ms
+#define ACTION_TIMEOUT		10000	// 10  s
 
 typedef enum
 {
-	RETURN_NONE = 0xff,
-	RETURN_LOCK,
-	RETURN_EDIT
-} buttonReturn;
+	BUTTON_LOCK = 0x7f,
+	BUTTON_EDIT
+} buttonMap;
 
 typedef enum
 {
 	RETURN_FAILURE,
-	RETURN_SUCCESS
+	RETURN_SUCCESS,
+	RETURN_PENDING,
+	RETURN_NONE
 } actionReturn;
 
-typedef enum
-{
-	ePASSIVE,
-	eLOCKING,
-	eUNLOCKING,
-	eSETTING_PASSCODE
-} lockState;
-
-extern TIM_HandleTypeDef htim1;
-extern UART_HandleTypeDef huart1;
-
-extern GPIO_TypeDef *OUT_PORT[NUM_COLUMNS];
-extern uint16_t OUT_PIN[NUM_COLUMNS];
-
-extern GPIO_TypeDef *IN_PORT[NUM_ROWS];
-extern uint16_t IN_PIN[NUM_ROWS];
-
-extern char passcode[PASSCODE_SIZE];
-
-void setButtonTimer(TIM_HandleTypeDef timer);
-void setUARTHandle(UART_HandleTypeDef uart);
-
-uint16_t scanButton(void);
-uint16_t actionSetPasscode(void);
-uint16_t actionEnterPasscode(void);
+bool scanButton(uint8_t* buttonValue);
+uint8_t actionSetPasscode(void);
+uint8_t actionEnterPasscode(void);
