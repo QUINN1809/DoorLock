@@ -120,7 +120,19 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+  uint8_t buffer = 37;
+  writeEEPROM(&buffer, sizeof(buffer), 0x0);
+
+  while(0)
+  {
+	  buffer = 23;
+  	  readEEPROM(&buffer, sizeof(buffer), 0x0);
+
+	  char msg[] = {'\n', buffer + '0'};
+	  print(msg, sizeof(msg));
+  }
+
+  while (0)
   {
 	switch(state)
 	{

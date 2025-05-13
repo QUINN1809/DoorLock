@@ -121,7 +121,7 @@ uint8_t actionSetPasscode(void)
 				memcpy(passcode, passcodeBuffer, sizeof(char)*PASSCODE_SIZE);
 				memset(passcodeBuffer, 0, sizeof(char)*PASSCODE_SIZE);
 
-				writeEEPROM(passcode);
+				//writeEEPROM(passcode);
 			}
 			else
 			{
