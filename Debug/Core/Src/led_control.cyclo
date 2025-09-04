@@ -1,0 +1,6 @@
+../Core/Src/led_control.c:20:6:errorLED	1
+../Core/Src/led_control.c:26:6:pendingLED	1
+../Core/Src/led_control.c:32:6:successLED	1
+../Core/Src/led_control.c:38:6:activateLED	2
+../Core/Src/led_control.c:53:6:disableLED	2
+../Core/Src/led_control.c:66:6:blinkLED	7

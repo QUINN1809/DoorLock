@@ -1,0 +1,2 @@
+../Core/Src/eeprom_control.c:26:6:writeEEPROM	40	static
+../Core/Src/eeprom_control.c:37:6:readEEPROM	48	static

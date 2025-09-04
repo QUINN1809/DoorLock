@@ -1,9 +1,0 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
-#define NUM_ROWS 		4
-#define NUM_COLUMNS 	3
-
-#define PASSCODE_SIZE 	4
-#define BUTTON_ERROR	(~0U)
