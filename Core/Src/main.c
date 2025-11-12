@@ -129,6 +129,7 @@ int main(void)
     // Enter sleep if inactivity is detected
     if(__HAL_TIM_GET_COUNTER(&htim1) > SLEEP_TIMEOUT)
     {
+        __HAL_TIM_SET_COUNTER(&htim1, 0);
         HAL_TIM_Base_Stop(&htim1);
         HAL_TIM_Base_Stop(&htim3);
 
