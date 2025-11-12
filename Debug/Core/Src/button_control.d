@@ -28,7 +28,8 @@ Core/Src/button_control.o: ../Core/Src/button_control.c \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_tim_ex.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart.h \
  ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart_ex.h \
- ../Core/Inc/eeprom_control.h ../Core/Inc/button_control.h
+ ../Core/Inc/eeprom_control.h ../Core/Inc/main.h \
+ ../Core/Inc/button_control.h
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal.h:
 ../Core/Inc/stm32f3xx_hal_conf.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_rcc.h:
@@ -59,4 +60,5 @@ Core/Src/button_control.o: ../Core/Src/button_control.c \
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart.h:
 ../Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_uart_ex.h:
 ../Core/Inc/eeprom_control.h:
+../Core/Inc/main.h:
 ../Core/Inc/button_control.h:

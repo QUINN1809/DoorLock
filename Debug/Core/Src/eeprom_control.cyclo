@@ -1,2 +1,6 @@
-../Core/Src/eeprom_control.c:26:6:writeEEPROM	1
-../Core/Src/eeprom_control.c:37:6:readEEPROM	1
+../Core/Src/eeprom_control.c:22:19:readLockStateEEPROM	1
+../Core/Src/eeprom_control.c:36:19:writeLockStateEEPROM	1
+../Core/Src/eeprom_control.c:50:19:readPasscodeEEPROM	1
+../Core/Src/eeprom_control.c:64:19:writePasscodeEEPROM	1
+../Core/Src/eeprom_control.c:80:19:writeEEPROM	4
+../Core/Src/eeprom_control.c:121:19:readEEPROM	5

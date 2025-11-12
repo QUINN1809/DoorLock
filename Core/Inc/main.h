@@ -31,6 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#define SLEEP_TIMEOUT 60000
+
 typedef enum
 {
 	ePASSIVE,
@@ -103,7 +105,7 @@ void Error_Handler(void);
 #define COL_3_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-
+#define PASSCODE_SIZE       4
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

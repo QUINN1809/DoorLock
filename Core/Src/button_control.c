@@ -6,76 +6,133 @@
 #include "eeprom_control.h"
 #include "button_control.h"
 
-extern TIM_HandleTypeDef htim1;
-extern TIM_HandleTypeDef htim3;
-extern void print(const char *str, uint16_t size);
-
-static GPIO_TypeDef *OUT_PORT[NUM_COLUMNS] = {GPIOB, GPIOA, GPIOB};
+static GPIO_TypeDef* OUT_PORT[NUM_COLUMNS] = {GPIOB, GPIOA, GPIOB};
 static uint16_t OUT_PIN[NUM_COLUMNS] = {GPIO_PIN_3, GPIO_PIN_11, GPIO_PIN_5};
-static GPIO_TypeDef *IN_PORT[NUM_ROWS] = {GPIOF, GPIOB, GPIOB, GPIOA};
+static GPIO_TypeDef* IN_PORT[NUM_ROWS] = {GPIOF, GPIOB, GPIOB, GPIOA};
 static uint16_t IN_PIN[NUM_ROWS] = {GPIO_PIN_1, GPIO_PIN_1, GPIO_PIN_0, GPIO_PIN_12};
 
-static char passcode[PASSCODE_SIZE] = {0, 0, 0, 0};
+static uint8_t passcode[PASSCODE_SIZE] = {0, 0, 0, 0};
+static uint32_t button_timers[NUM_ROWS][NUM_COLUMNS] = {0};
 
+
+/*
+ * getPasscode():
+ * returns the keypad passcode
+ * Inputs:
+ *      (None)
+ * Outputs:
+ *      (buffer) Keypad passcode
+ */
+void getPasscode(uint8_t* buffer)
+{
+    for(uint8_t i = 0; i<PASSCODE_SIZE; i++)
+    {
+        buffer[i] = passcode[i];
+    }
+}
+
+
+/*
+ * setPasscode():
+ * sets the internal keypad passcode
+ * Inputs:
+ *      (buffer) Keypad passcode
+ * Outputs:
+ *      (None)
+ */
+void setPasscode(uint8_t* buffer)
+{
+    for(uint8_t i = 0; i<PASSCODE_SIZE; i++)
+    {
+        passcode[i] = buffer[i];
+    }
+}
+
+/*
+ * readButton():
+ * Reads button and debounces the signal
+ * Inputs:
+ *      (row) button matrix row
+ *      (column) button matrix column
+ * Outputs:
+ *      (return value) button state
+ */
+bool readButton(uint8_t row, uint8_t column)
+{
+    if( __HAL_TIM_GET_COUNTER(&htim3) - button_timers[row][column] > BUTTON_DEBOUNCE_TIMEOUT)
+    {
+        return false;
+    }
+
+    button_timers[row][column] = __HAL_TIM_GET_COUNTER(&htim3);
+    bool state = HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]);
+
+    if(state)
+    {
+        // Start timer for button timeout
+        uint32_t timeout = __HAL_TIM_GET_COUNTER(&htim3) + BUTTON_TIMEOUT;
+        while(__HAL_TIM_GET_COUNTER(&htim3) < timeout)
+        {
+            // Stall the MCU while the button is held to prevent multiple reads
+            if (!HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]))
+            {
+                break;
+            }
+        }
+    }
+
+    return state;
+}
 
 
 /* 											1 2 3
- * scanButton():							4 5 6
+ * scanButtons():							4 5 6
  * Scans button matrix for button presses	7 8 9
- * Returns read status and value			* 0 #
+ * Inputs:                                  * 0 #
+ *      (None)
+ * Outputs:
+ *      (buttonValue) button identifier
+ *      (return value) read status
  */
-bool scanButton(uint8_t* buttonValue)
+bool scanButtons(uint8_t* button)
 {
-	const uint8_t button_map[NUM_COLUMNS] = {BUTTON_LOCK, 0, BUTTON_EDIT};
+	uint8_t button_map[NUM_ROWS][NUM_COLUMNS] = {{1, 2, 3},
+                                                 {4, 5, 6},
+                                                 {7, 8, 9},
+                                                 {BUTTON_LOCK, 0, BUTTON_EDIT}};
+
+	bool break_loop = false;
 	bool rtv = false;
 
-	// Pull columns to digital HIGH
+	// Pull columns to digital LOW
 	for(uint8_t col = 0; col < NUM_COLUMNS; col++)
 	{
-		HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_SET);
+		HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_RESET);
 
 		// Scan rows for button presses
 		for(uint8_t row = 0; row < NUM_ROWS; row++)
 		{
-			if(HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]) == true)
+			if(readButton(row, col))
 			{
-				//char msg[] = {row, col};
-				//print(&msg);
-
-				// Start timer for button timeout
-				uint32_t timeout = __HAL_TIM_GET_COUNTER(&htim3) + BLINK_INTERVAL/2;
-				while(__HAL_TIM_GET_COUNTER(&htim3) < timeout)
-				{
-					// Stall the MCU while the button is held to prevent multiple reads
-					if (HAL_GPIO_ReadPin(IN_PORT[row], IN_PIN[row]) == false)
-					{
-						break;
-					}
-				}
+                rtv = true;
 
 				// Assign output value to button pressed
-				if(row <  NUM_ROWS - 1)
-				{
-					rtv = true;
-					*buttonValue = col * NUM_COLUMNS + row + 1;
-				}
-				else if(row == NUM_ROWS - 1)
-				{
-					rtv = true;
-					*buttonValue = button_map[col];
-				}
+				*button = button_map[row][col];
 
-				// Disable column pulled high
-				HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_RESET);
-				goto breakLoop;
+				// Exit button scan
+				break_loop = true;
+				break;
 			}
 		}
 
-		// Disable column pulled high
-		HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_RESET);
-	}
+		// Enable column pulled low
+		HAL_GPIO_WritePin(OUT_PORT[col], OUT_PIN[col], GPIO_PIN_SET);
 
-	breakLoop:
+		if(break_loop)
+		{
+		    break;
+		}
+	}
 
 	return rtv;
 }
@@ -83,26 +140,28 @@ bool scanButton(uint8_t* buttonValue)
 
 /*
  * actionSetPasscode():
- * Changes the passcode of the doorlock
- * Outputs success state
+ * Detects and handles passcode changes initiated by the user
+ * Inputs:
+ *      (None)
+ * Outputs:
+ *      (return value) State of passcode change
  */
-uint8_t actionSetPasscode(void)
+e_btnReturnState actionSetPasscode(void)
 {
 	static uint16_t index = 0;
 	static char passcodeBuffer[PASSCODE_SIZE];
 
-	uint8_t rtv = RETURN_NONE;
+	e_btnReturnState rtv = RETURN_NONE;
 
 	// Check button matrix for input
 	uint8_t buttonValue;
-	if(scanButton(&buttonValue))
+	if(scanButtons(&buttonValue))
 	{
 		// Abort action if lock/edit button pressed
 		if(buttonValue == BUTTON_LOCK || buttonValue == BUTTON_EDIT)
 		{
 			index = 0;
 			rtv = buttonValue;
-			HAL_TIM_Base_Stop(&htim1);
 			__HAL_TIM_SET_COUNTER(&htim1, 0);
 			memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
 		}
@@ -116,18 +175,14 @@ uint8_t actionSetPasscode(void)
 			{
 				index = 0;
 				rtv = RETURN_SUCCESS;
-				HAL_TIM_Base_Stop(&htim1);
 				__HAL_TIM_SET_COUNTER(&htim1, 0);
 				memcpy(passcode, passcodeBuffer, sizeof(char)*PASSCODE_SIZE);
 				memset(passcodeBuffer, 0, sizeof(char)*PASSCODE_SIZE);
-
-				//writeEEPROM(passcode);
 			}
 			else
 			{
 				// Reset timeout timer
 				rtv = RETURN_PENDING;
-				HAL_TIM_Base_Start(&htim1);
 				__HAL_TIM_SET_COUNTER(&htim1, 0);
 			}
 		}
@@ -137,7 +192,6 @@ uint8_t actionSetPasscode(void)
 		// Abort action if timeout activates
 		index = 0;
 		rtv = RETURN_FAILURE;
-		HAL_TIM_Base_Stop(&htim1);
 		__HAL_TIM_SET_COUNTER(&htim1, 0);
 		memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
 	}
@@ -148,26 +202,28 @@ uint8_t actionSetPasscode(void)
 
 /*
  * actionEnterPasscode():
- * Accept passcode to unlock the doorlock
- * Outputs success state
+ * Detects and validates passcode entered by user
+ * Inputs:
+ *      (None)
+ * Outputs:
+ *      (return value) State of passcode validation
  */
-uint8_t actionEnterPasscode(void)
+e_btnReturnState actionEnterPasscode(void)
 {
 	static uint8_t index = 0;
 	static char passcodeBuffer[PASSCODE_SIZE];
 
-	uint8_t rtv = RETURN_NONE;
+	e_btnReturnState rtv = RETURN_NONE;
 
 	// Check button matrix for input
 	uint8_t buttonValue;
-	if(scanButton(&buttonValue))
+	if(scanButtons(&buttonValue))
 	{
 		// Abort action if lock/edit button pressed
 		if(buttonValue == BUTTON_LOCK || buttonValue == BUTTON_EDIT)
 		{
 			index = 0;
 			rtv = buttonValue;
-			HAL_TIM_Base_Stop(&htim1);
 			__HAL_TIM_SET_COUNTER(&htim1, 0);
 			memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
 		}
@@ -188,7 +244,6 @@ uint8_t actionEnterPasscode(void)
 					rtv &= passcode[i] == passcodeBuffer[i];
 				}
 
-				HAL_TIM_Base_Stop(&htim1);
 				__HAL_TIM_SET_COUNTER(&htim1, 0);
 				memset(passcodeBuffer, 0, sizeof(char)*PASSCODE_SIZE);
 			}
@@ -196,7 +251,6 @@ uint8_t actionEnterPasscode(void)
 			{
 				// Reset timeout timer
 				rtv = RETURN_PENDING;
-				HAL_TIM_Base_Start(&htim1);
 				__HAL_TIM_SET_COUNTER(&htim1, 0);
 			}
 		}
@@ -206,7 +260,6 @@ uint8_t actionEnterPasscode(void)
 		// Abort action if timeout activates
 		index = 0;
 		rtv = RETURN_FAILURE;
-		HAL_TIM_Base_Stop(&htim1);
 		__HAL_TIM_SET_COUNTER(&htim1, 0);
 		memset(passcodeBuffer, 0, sizeof(passcodeBuffer));
 	}

@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <stdio.h>
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "button_control.h"
@@ -82,11 +82,15 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   uint8_t state = ePASSIVE;
-  bool lockStatus = eLOCKED;
   uint8_t rtv;
 
   // Read EEPROM for lock state;
+  uint8_t passcode[PASSCODE_SIZE];
+  readPasscodeEEPROM(passcode);
+  setPasscode(passcode);
 
+  bool lockStatus = eLOCKED;
+  readLockStateEEPROM(&lockStatus);
 
   /* USER CODE END 1 */
 
@@ -122,6 +126,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // Enter sleep if inactivity is detected
+    if(__HAL_TIM_GET_COUNTER(&htim1) > SLEEP_TIMEOUT)
+    {
+        HAL_TIM_Base_Stop(&htim1);
+        HAL_TIM_Base_Stop(&htim3);
+
+        __HAL_RCC_GPIOF_CLK_DISABLE();
+        __HAL_RCC_GPIOA_CLK_DISABLE();
+        __HAL_RCC_GPIOB_CLK_DISABLE();
+
+        __enable_irq();
+        HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
+    }
+
 	switch(state)
 	{
 	case ePASSIVE:
@@ -174,6 +192,8 @@ int main(void)
 
 	case eLOCKING:
 		lockStatus = !lockStatus;
+		writeLockStateEEPROM(&lockStatus);
+
 		powerMotor(lockStatus, 1000U);
 		state = ePASSIVE;
 
@@ -183,6 +203,9 @@ int main(void)
 		rtv = actionSetPasscode();
 
 		if(rtv == RETURN_SUCCESS){
+		    getPasscode(passcode);
+		    writePasscodeEEPROM(passcode);
+
 			char msg[] = "\nPasscode Successfully Set";
 			print(msg, sizeof(msg));
 			successLED();
@@ -208,7 +231,6 @@ int main(void)
 		break;
 	}
 
-	blinkLED();
 	HAL_Delay(50);
     /* USER CODE END WHILE */
 
@@ -457,7 +479,7 @@ static void MX_GPIO_Init(void)
                           |DIR_Pin|STEP_Pin|COL_2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, COL_1_Pin|COL_3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, COL_1_Pin|GPIO_PIN_4|COL_3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : ROW_1_Pin */
   GPIO_InitStruct.Pin = ROW_1_Pin;
@@ -488,20 +510,30 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
   /*Configure GPIO pin : ROW_4_Pin */
   GPIO_InitStruct.Pin = ROW_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ROW_4_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : COL_1_Pin COL_3_Pin */
-  GPIO_InitStruct.Pin = COL_1_Pin|COL_3_Pin;
+  /*Configure GPIO pins : COL_1_Pin PB4 COL_3_Pin */
+  GPIO_InitStruct.Pin = COL_1_Pin|GPIO_PIN_4|COL_3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3|GPIO_PIN_5, GPIO_PIN_SET);
 /* USER CODE END MX_GPIO_Init_2 */
 }
 

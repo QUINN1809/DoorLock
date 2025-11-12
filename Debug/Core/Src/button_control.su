@@ -1,3 +1,6 @@
-../Core/Src/button_control.c:27:6:scanButton	32	static
-../Core/Src/button_control.c:89:9:actionSetPasscode	16	static
-../Core/Src/button_control.c:154:9:actionEnterPasscode	16	static
+../Core/Src/button_control.c:26:6:getPasscode	24	static
+../Core/Src/button_control.c:43:6:setPasscode	24	static
+../Core/Src/button_control.c:60:6:readButton	32	static
+../Core/Src/button_control.c:97:6:scanButtons	32	static
+../Core/Src/button_control.c:149:18:actionSetPasscode	16	static
+../Core/Src/button_control.c:211:18:actionEnterPasscode	16	static

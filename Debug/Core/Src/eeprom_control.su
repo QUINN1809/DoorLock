@@ -1,2 +1,6 @@
-../Core/Src/eeprom_control.c:26:6:writeEEPROM	40	static
-../Core/Src/eeprom_control.c:37:6:readEEPROM	48	static
+../Core/Src/eeprom_control.c:22:19:readLockStateEEPROM	16	static
+../Core/Src/eeprom_control.c:36:19:writeLockStateEEPROM	16	static
+../Core/Src/eeprom_control.c:50:19:readPasscodeEEPROM	16	static
+../Core/Src/eeprom_control.c:64:19:writePasscodeEEPROM	16	static
+../Core/Src/eeprom_control.c:80:19:writeEEPROM	112	dynamic
+../Core/Src/eeprom_control.c:121:19:readEEPROM	88	static

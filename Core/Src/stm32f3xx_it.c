@@ -22,6 +22,7 @@
 #include "stm32f3xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "led_control.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -183,7 +184,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-
+  blinkLED();
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
@@ -199,5 +200,20 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
+void EXTI9_5_IRQHandler(void)
+{
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+}
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == GPIO_PIN_8)
+    {
+        __HAL_RCC_GPIOF_CLK_ENABLE();
+        __HAL_RCC_GPIOA_CLK_ENABLE();
+        __HAL_RCC_GPIOB_CLK_ENABLE();
+        HAL_TIM_Base_Start(&htim1);
+        HAL_TIM_Base_Start(&htim3);
+    }
+}
 /* USER CODE END 1 */

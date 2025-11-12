@@ -7,18 +7,26 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
+#include "main.h"
 
-#define EEPROM_TIMEOUT 		10000
+#define EEPROM_TRANSFER_TIMEOUT     10000
+#define EEPROM_WAIT_TIMEOUT         50
 
-#define CONTROL_BYTE_READ	0b10100001
-#define CONTROL_BYTE_WRITE	0b10100000
+#define CONTROL_BYTE_READ	        0b10100001
+#define CONTROL_BYTE_WRITE	        0b10100000
 
-#define NUM_ADDRESS_BYTES	2
+#define NUM_ADDRESS_BYTES	        2
 
-#define DEVICE_ADDRESS		0b000
-#define PASSWORD_ADDRESS	0x256
+#define LOCK_STATE_ADDRESS          0x512
+#define PASSWORD_ADDRESS	        0x256
 
-uint16_t readLockState(void);
-uint16_t readPasscode(void);
-void writeEEPROM(uint8_t * msg, uint16_t size, uint16_t address);
-void readEEPROM(uint8_t * msg, uint16_t size, uint16_t address);
+
+HAL_StatusTypeDef readLockStateEEPROM(bool* lock_state);
+HAL_StatusTypeDef writeLockStateEEPROM(bool* lock_state);
+
+HAL_StatusTypeDef readPasscodeEEPROM(uint8_t* passcode);
+HAL_StatusTypeDef writePasscodeEEPROM(uint8_t* passcode);
+
+HAL_StatusTypeDef writeEEPROM(uint8_t * msg, uint16_t size, uint16_t address);
+HAL_StatusTypeDef readEEPROM(uint8_t * msg, uint16_t size, uint16_t address);
